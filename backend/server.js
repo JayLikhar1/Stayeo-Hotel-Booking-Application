@@ -11,11 +11,26 @@ const app = express();
 
 // ─── Middleware ───────────────────────────────────────────────────────────────
 app.use(cors({
-  origin: [
-    process.env.FRONTEND_URL || 'http://localhost:5173',
-    'http://localhost:3000',
-    'https://stayeo.vercel.app',
-  ],
+  origin: (origin, callback) => {
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ].filter(Boolean);
+
+    // Allow requests with no origin (mobile apps, Postman, curl)
+    if (!origin) return callback(null, true);
+
+    // Allow any Vercel preview/production URL for this project
+    if (
+      allowed.includes(origin) ||
+      /^https:\/\/stayeo.*\.vercel\.app$/.test(origin)
+    ) {
+      return callback(null, true);
+    }
+
+    callback(new Error(`CORS blocked: ${origin}`));
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
